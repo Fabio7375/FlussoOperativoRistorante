@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flusso di Cassa Operativo - Ristorante</title>
+    
+    <!-- Inclusione di Tailwind CSS tramite CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Inclusione di Chart.js per i grafici -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        input[type="number"], input[type="checkbox"] {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 100%;
+        }
+        input[type="checkbox"] {
+            width: auto;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        .button {
+            background-color: #4299e1;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.3s;
+        }
+        .button:hover {
+            background-color: #3182ce;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: 600;
+        }
+        td.numeric {
+            text-align: right;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr.total {
+            background-color: #e2e8f0;
+            font-weight: 600;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 20px 0;
+        }
+        .summary-box {
+            background-color: #ebf8ff;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+        .summary-item {
+            background-color: white;
+            padding: 15px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .summary-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #4a5568;
+        }
+        .summary-value {
+            font-size: 20px;
+            font-weight: 700;
+            margin-top: 5px;
+        }
+        .value-positive {
+            color: #48bb78;
+        }
+        .value-negative {
+            color: #f56565;
+        }
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            .summary-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1 class="text-3xl font-bold mb-6 text-center">Flusso di Cassa Operativo - Ristorante</h1>
+            
+            <div class="grid">
+                <div class="form-group">
+                    <label for="coperti">Numero di coperti:</label>
+                    <input type="number" id="coperti" value="40" min="1">
+                </div>
+                
+                <div class="form-group">
+                    <label for="tassoOccupazione">Tasso occupazione tavoli (%):</label>
+                    <input type="number" id="tassoOccupazione" value="70" min="0" max="100">
+                </div>
+                
+                <div class="form-group">
+                    <label for="turnoverTavoli">Turnover tavoli per pasto:</label>
+                    <input type="number" id="turnoverTavoli" value="2" min="1" step="0.1">
+                </div>
+                
+                <div class="form-group">
+                    <label for="giorniLavorativi">Giorni lavorativi mensili:</label>
+                    <input type="number" id="giorniLavorativi" value="26" min="1" max="31">
+                </div>
+                
+                <div class="form-group">
+                    <label for="prezzoMenuMedio">Prezzo menu medio (€):</label>
+                    <input type="number" id="prezzoMenuMedio" value="35" min="1" step="0.5">
+                </div>
+                
+                <div class="form-group">
+                    <label for="costiFissiMensili">Costi fissi mensili (€):</label>
+                    <input type="number" id="costiFissiMensili" value="15000" min="0">
+                </div>
+                
+                <div class="form-group">
+                    <label for="aliquotaIvaCosti">Aliquota IVA costi (%):</label>
+                    <input type="number" id="aliquotaIvaCosti" value="22" min="0" max="30">
+                </div>
+                
+                <div class="form-group">
+                    <label for="giorniPagamento">Giorni pagamento fornitori:</label>
+                    <input type="number" id="giorniPagamento" value="30" min="0">
+                </div>
+                
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="stagionalita" checked>
+                        Applicare stagionalità
+                    </label>
+                </div>
+            </div>
+            
+            <div class="mt-4">
+                <button id="calcolaButton" class="button">Calcola Flusso di Cassa</button>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2 class="text-xl font-semibold mb-4">Flusso di Cassa Mensile</h2>
+            <div class="chart-container">
+                <canvas id="flussoCassaChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2 class="text-xl font-semibold mb-4">Dettaglio Mensile</h2>
+            <div class="overflow-x-auto">
+                <table id="flussoCassaTable">
+                    <thead>
+                        <tr>
+                            <th>Mese</th>
+                            <th>Ricavi</th>
+                            <th>Costi Variabili</th>
+                            <th>Costi Fissi</th>
+                            <th>Risultato Operativo</th>
+                            <th>Flusso di Cassa</th>
+                            <th>Bilancio Cumulativo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Dati generati dinamicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="summary-box" id="riepilogoContainer">
+            <h3 class="text-lg font-semibold mb-2">Riepilogo Annuale:</h3>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <div class="summary-label">Ricavi Totali</div>
+                    <div class="summary-value value-positive" id="ricaviTotali">0 €</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">Costi Totali</div>
+                    <div class="summary-value value-negative" id="costiTotali">0 €</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">Risultato Operativo</div>
+                    <div class="summary-value" id="risultatoOperativo">0 €</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Definizione delle variabili globali
+        let flussoCassaChart;
+        
+        // Coefficienti di stagionalità per mesi (1.0 = media, > 1.0 = alta stagione, < 1.0 = bassa stagione)
+        const coefficientiStagionali = {
+            ricavi: [0.7, 0.8, 0.9, 1.0, 1.1, 1.3, 1.5, 1.6, 1.2, 0.9, 0.7, 1.3], // Gen-Dic
+            costi: [1.1, 1.0, 0.9, 0.9, 0.9, 1.0, 1.2, 1.3, 1.0, 0.9, 0.8, 1.0]   // Gen-Dic
+        };
+        
+        // Funzione per formattare numeri in valuta
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('it-IT', { 
+                style: 'currency', 
+                currency: 'EUR',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(value);
+        }
+        
+        // Calcolo dei ricavi giornalieri
+        function calcolaRicaviGiornalieri(coperti, tassoOccupazione, turnoverTavoli, prezzoMenuMedio) {
+            return coperti * (tassoOccupazione / 100) * turnoverTavoli * prezzoMenuMedio;
+        }
+        
+        // Calcolo dei costi variabili (assumiamo 35% dei ricavi per food cost)
+        function calcolaCostiVariabili(ricavi) {
+            return ricavi * 0.35;
+        }
+        
+        // Generazione dati mensili
+        function generaDatiMensili() {
+            const coperti = parseInt(document.getElementById('coperti').value);
+            const tassoOccupazione = parseInt(document.getElementById('tassoOccupazione').value);
+            const turnoverTavoli = parseFloat(document.getElementById('turnoverTavoli').value);
+            const giorniLavorativi = parseInt(document.getElementById('giorniLavorativi').value);
+            const prezzoMenuMedio = parseFloat(document.getElementById('prezzoMenuMedio').value);
+            const costiFissiMensili = parseInt(document.getElementById('costiFissiMensili').value);
+            const aliquotaIvaCosti = parseInt(document.getElementById('aliquotaIvaCosti').value);
+            const giorniPagamento = parseInt(document.getElementById('giorniPagamento').value);
+            const stagionalita = document.getElementById('stagionalita').checked;
+            
+            const data = [];
+            let bilancioCumulativo = 0;
+            
+            for (let mese = 0; mese < 12; mese++) {
+                const nomesMese = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'][mese];
+                
+                // Applica coefficiente stagionale se l'opzione è attivata
+                const coeffRicavi = stagionalita ? coefficientiStagionali.ricavi[mese] : 1.0;
+                const coeffCosti = stagionalita ? coefficientiStagionali.costi[mese] : 1.0;
+                
+                const ricaviGiornalieri = calcolaRicaviGiornalieri(coperti, tassoOccupazione, turnoverTavoli, prezzoMenuMedio) * coeffRicavi;
+                const ricaviMensili = ricaviGiornalieri * giorniLavorativi;
+                const ricaviNetti = ricaviMensili / 1.10; // Rimuove IVA al 10% dai ricavi
+                
+                const costiVariabili = calcolaCostiVariabili(ricaviNetti);
+                const costiFissiAdjusted = costiFissiMensili * coeffCosti;
+                const costiFissiNetti = costiFissiAdjusted / (1 + (aliquotaIvaCosti / 100)); // Rimuove IVA dai costi fissi
+                
+                const risultatoOperativo = ricaviNetti - costiVariabili - costiFissiNetti;
+                
+                // Aggiunta dei giorni di pagamento (ritardo nei pagamenti)
+                const flussoCassaOperativo = (mese === 0) 
+                    ? ricaviMensili - costiVariabili * (1 + 0.35) - costiFissiAdjusted * (giorniLavorativi / 30)
+                    : ricaviMensili - (giorniPagamento > 30 ? 0 : costiVariabili * (1 + 0.35)) - (giorniPagamento > 30 ? 0 : costiFissiAdjusted);
+                
+                bilancioCumulativo += flussoCassaOperativo;
+                
+                data.push({
+                    mese: nomesMese,
+                    ricavi: Math.round(ricaviMensili),
+                    costiVariabili: Math.round(costiVariabili * (1 + 0.35)), // Aggiunta IVA
+                    costiFissi: Math.round(costiFissiAdjusted),
+                    risultatoOperativo: Math.round(risultatoOperativo),
+                    flussoCassa: Math.round(flussoCassaOperativo),
+                    bilancioCumulativo: Math.round(bilancioCumulativo)
+                });
+            }
+            
+            return data;
+        }
+        
+        // Funzione per aggiornare la tabella
+        function aggiornaTabella(dati) {
+            const tbody = document.querySelector('#flussoCassaTable tbody');
+            tbody.innerHTML = '';
+            
+            let totaliRicavi = 0;
+            let totaliCostiVariabili = 0;
+            let totaliCostiFissi = 0;
+            let totaliRisultatoOperativo = 0;
+            let totaliFlussoCassa = 0;
+            
+            dati.forEach(item => {
+                const row = document.createElement('tr');
+                
+                row.innerHTML = `
+                    <td>${item.mese}</td>
+                    <td class="numeric">${formatCurrency(item.ricavi)}</td>
+                    <td class="numeric">${formatCurrency(item.costiVariabili)}</td>
+                    <td class="numeric">${formatCurrency(item.costiFissi)}</td>
+                    <td class="numeric">${formatCurrency(item.risultatoOperativo)}</td>
+                    <td class="numeric">${formatCurrency(item.flussoCassa)}</td>
+                    <td class="numeric">${formatCurrency(item.bilancioCumulativo)}</td>
+                `;
+                
+                tbody.appendChild(row);
+                
+                totaliRicavi += item.ricavi;
+                totaliCostiVariabili += item.costiVariabili;
+                totaliCostiFissi += item.costiFissi;
+                totaliRisultatoOperativo += item.risultatoOperativo;
+                totaliFlussoCassa += item.flussoCassa;
+            });
+            
+            // Aggiunta riga totali
+            const totalRow = document.createElement('tr');
+            totalRow.className = 'total';
+            
+            totalRow.innerHTML = `
+                <td>TOTALE</td>
+                <td class="numeric">${formatCurrency(totaliRicavi)}</td>
+                <td class="numeric">${formatCurrency(totaliCostiVariabili)}</td>
+                <td class="numeric">${formatCurrency(totaliCostiFissi)}</td>
+                <td class="numeric">${formatCurrency(totaliRisultatoOperativo)}</td>
+                <td class="numeric">${formatCurrency(totaliFlussoCassa)}</td>
+                <td class="numeric">${formatCurrency(dati[dati.length - 1].bilancioCumulativo)}</td>
+            `;
+            
+            tbody.appendChild(totalRow);
+            
+            // Aggiornamento riepilogo
+            document.getElementById('ricaviTotali').textContent = formatCurrency(totaliRicavi);
+            document.getElementById('costiTotali').textContent = formatCurrency(totaliCostiVariabili + totaliCostiFissi);
+            
+            const risultatoOperativoElement = document.getElementById('risultatoOperativo');
+            risultatoOperativoElement.textContent = formatCurrency(totaliRisultatoOperativo);
+            
+            if (totaliRisultatoOperativo >= 0) {
+                risultatoOperativoElement.classList.remove('value-negative');
+                risultatoOperativoElement.classList.add('value-positive');
+            } else {
+                risultatoOperativoElement.classList.remove('value-positive');
+                risultatoOperativoElement.classList.add('value-negative');
+            }
+        }
+        
+        // Funzione per creare o aggiornare il grafico
+        function aggiornaGrafico(dati) {
+            const ctx = document.getElementById('flussoCassaChart').getContext('2d');
+            
+            // Estrazione dati per il grafico
+            const labels = dati.map(item => item.mese);
+            const ricaviData = dati.map(item => item.ricavi);
+            const costiVariabiliData = dati.map(item => item.costiVariabili);
+            const costiFissiData = dati.map(item => item.costiFissi);
+            const flussoCassaData = dati.map(item => item.flussoCassa);
+            const bilancioCumulativoData = dati.map(item => item.bilancioCumulativo);
+            
+            // Distruggi il grafico esistente se presente
+            if (flussoCassaChart) {
+                flussoCassaChart.destroy();
+            }
+            
+            // Creazione del nuovo grafico
+            flussoCassaChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Ricavi',
+                            data: ricaviData,
+                            borderColor: '#4CAF50',
+                            backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Costi Variabili',
+                            data: costiVariabiliData,
+                            borderColor: '#F44336',
+                            backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Costi Fissi',
+                            data: costiFissiData,
+                            borderColor: '#FF9800',
+                            backgroundColor: 'rgba(255, 152, 0, 0.1)',
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Flusso di Cassa',
+                            data: flussoCassaData,
+                            borderColor: '#2196F3',
+                            backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Bilancio Cumulativo',
+                            data: bilancioCumulativoData,
+                            borderColor: '#9C27B0',
+                            backgroundColor: 'rgba(156, 39, 176, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    label += formatCurrency(context.raw);
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatCurrency(value);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Funzione principale per calcolare e visualizzare i dati
+        function calcolaFlussoCassa() {
+            const dati = generaDatiMensili();
+            aggiornaTabella(dati);
+            aggiornaGrafico(dati);
+        }
+        
+        // Event listener per il pulsante di calcolo
+        document.getElementById('calcolaButton').addEventListener('click', calcolaFlussoCassa);
+        
+        // Calcola automaticamente all'avvio
+        document.addEventListener('DOMContentLoaded', calcolaFlussoCassa);
+    </script>
+</body>
+</html>
